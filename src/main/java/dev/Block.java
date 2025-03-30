@@ -24,7 +24,6 @@ public class Block {
     private final static String hash(Transactions transactions, String previousHash) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            String hashOfTransactions = String.valueOf(transactions.hashCode());
             String input = transactions + previousHash;
             byte[] hash =md.digest( input.getBytes(StandardCharsets.UTF_8));
             return new BigInteger(1, hash).toString(16);
