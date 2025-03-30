@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group = 'dev'
@@ -9,7 +10,6 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -17,4 +17,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+application {
+    mainClass = 'dev.Main'
 }
