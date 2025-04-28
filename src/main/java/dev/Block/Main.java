@@ -1,47 +1,60 @@
 package dev.Block;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 
 
+import java.util.Scanner;
 
+import dev.Block.util.ConsoleLogger;
+
+/**
+ * Точка входа в приложение P2P Blockchain Peer.
+ * Запрашивает у пользователя никнейм и порт, создает и запускает Peer.
+ */
 public class Main {
 
-    public static final String FIRST_HASH = "0000000000000000000000000000000000000000000000000000000000000001";
+    public static void main(String[] args) {
+        try (Scanner scanner = new Scanner(System.in)) {
+            Thread.currentThread().setName("PeerMain-Setup"); // Имя потока для настройки
 
+            String nickname = "";
+            // Валидация никнейма
+            while (nickname.isEmpty() || nickname.contains(":") || nickname.contains(" ") || nickname.equalsIgnoreCase("UNKNOWN")) {
+                 System.out.print("Enter your nickname (no spaces or ':'): ");
+                 nickname = scanner.nextLine().trim();
+                 if (nickname.isEmpty() || nickname.contains(":") || nickname.contains(" ") || nickname.equalsIgnoreCase("UNKNOWN")) {
+                     System.out.println("Invalid nickname.");
+                     nickname = "";
+                 }
+            }
 
+            int port = 0;
+            // Валидация порта
+            while (port <= 1024 || port > 65535) { // Используем порты выше 1024
+                System.out.print("Enter the port number to listen on (1025-65535, e.g., 8080): ");
+                try {
+                    port = Integer.parseInt(scanner.nextLine().trim());
+                    if (port <= 1024 || port > 65535) System.out.println("Port must be between 1025 and 65535.");
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid port number.");
+                    port = 0; // Сброс для повторного ввода
+                }
+            }
 
-    public ArrayList<Block> blocks = new ArrayList<>();
+            // Создаем и запускаем пир
+            Peer peer = new Peer(nickname, port);
 
-    public static void main(String[] args)  {
+            // Добавляем Shutdown Hook для корректного завершения по Ctrl+C
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                 ConsoleLogger.print("\nCtrl+C detected or JVM shutting down, initiating peer shutdown...");
+                 peer.shutdown();
+                 ConsoleLogger.print("Shutdown hook finished.");
+             }, "ShutdownHook"));
 
-        LocalDate date = LocalDate.now();
-        Transactions transactions1 = new Transactions("Igor", 112, "Misha");
-        Block block1 = new Block(FIRST_HASH, transactions1, date, null);
-    
-    
-        Transactions transactions2 = new Transactions("Igor", 10, "Misha");
-        Block block2 = new Block(block1.getHashOfBlock(), transactions2, date, block1);
-    
-    
-        Transactions transactions3 = new Transactions("Igor", 121, "Misha");
-        Block block3 = new Block(block2.getHashOfBlock(), transactions3, date, block2);
-    
-        System.out.println("Updated hash of block 1: " + block1.getHashOfBlock());
-        System.out.println("Updated hash of block 2: " + block2.getHashOfBlock());
-        System.out.println("Updated hash of block 3: " + block3.getHashOfBlock());
-
-
-        Transactions transactionsUpdate2 = new Transactions("Igor", 10, "Misha");
-    
-        Block.updateTransactionInBlock(transactionsUpdate2, block2);
-
-
-        System.out.println("Была произведена замена транзацкии во 2 блоке");
-    
-        System.out.println("Updated hash of block 1: " + block1.getHashOfBlock());
-        System.out.println("Updated hash of block 2: " + block2.getHashOfBlock());
-        System.out.println("Updated hash of block 3: " + block3.getHashOfBlock());
-        
+            // Запускаем серверную часть и обработку ввода пользователя
+            peer.startServer();
+            peer.startUserInput(); // Этот метод будет работать до вызова /exit или shutdown
+        }
+        ConsoleLogger.print("Main setup thread finished. Peer is running.");
+        // scanner здесь закрывается внутри startUserInput
     }
 }
